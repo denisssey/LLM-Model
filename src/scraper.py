@@ -1,11 +1,13 @@
-from bs4 import BeautifulSoup
-from pathlib import Path
 import json
+
+from bs4 import BeautifulSoup
+
+from paths import RAW_DIRECTORY, CHUNKS_JSON
 
 
 def load_local_html(filepath: str) -> str:
-        with open(filepath, "r", encoding="utf-8-sig") as file:
-            return file.read()
+    with open(filepath, "r", encoding="utf-8-sig") as file:
+        return file.read()
 
 def extract_article_text(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "lxml")
@@ -28,7 +30,7 @@ def extract_article_text(html: str) -> list[dict]:
 
 
 if __name__ == "__main__":
-    html_files = sorted(Path("data/raw").glob("*.html"))
+    html_files = sorted(RAW_DIRECTORY.glob("*.html"))
     print("Найдено файлов:", len(html_files))
 
     all_chunks = []
@@ -37,15 +39,11 @@ if __name__ == "__main__":
         for chunk in extract_article_text(html):
             chunk["source_file"] = filepath.name
             all_chunks.append(chunk)
-
     print("Всего чанков", len(all_chunks))
 
-    out_direcotry = Path("data/processed")
-
-    out_path = out_direcotry / "chunks.json"
-    out_path.write_text(
+    CHUNKS_JSON.write_text(
         json.dumps(all_chunks, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    print("Сохранил:", out_path)
+    print("Сохранил:", CHUNKS_JSON)
 
