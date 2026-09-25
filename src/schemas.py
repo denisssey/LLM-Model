@@ -68,7 +68,7 @@ if __name__ == "__main__":
     print("RetrievedChunk:", rc.chunk.question, "| score =", rc.score)
     print()
 
-    # 3. Проверяем Instruction — просто создаём экземпляр с фиктивными данными
+    # 3. Проверяем Instruction - просто создаём экземпляр с фиктивными данными
     instr = Instruction(
         title="Получение соцобслуживания для жителя блокадного Ленинграда",
         audience="Жители блокадного Ленинграда",
