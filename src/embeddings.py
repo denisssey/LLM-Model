@@ -12,8 +12,6 @@ def get_model() -> SentenceTransformer:
     if _model is None:
         _model = SentenceTransformer(MODEL_NAME)
         return _model
-    else:
-        return _model
 
 
 def embed_passages(texts: list[str]) -> np.ndarray:
