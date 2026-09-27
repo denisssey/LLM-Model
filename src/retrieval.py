@@ -23,7 +23,7 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
     return _embeddings, _chunks
 
 
-def retrieve(query: str, top_k: int = 3) -> list[RetrievedChunk]:
+def retrieve(query: str, top_k: int = 5) -> list[RetrievedChunk]:
     embeddings, chunks = _load_index()
     query_vector = embed_query(query)
     scores = embeddings @ query_vector
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     ]
     for q in test_queries:
         print(f"\n=== {q} ===")
-        for rc in retrieve(q, top_k=3):
+        for rc in retrieve(q, top_k=5):
             print(f"  [{rc.score:.3f}] {rc.chunk.question}")
