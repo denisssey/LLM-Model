@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from schemas import Instruction, RetrievedChunk
 
 
-MODEL_NAME = "qwen2.5:7b-instruct"
+MODEL_NAME = "qwen2.5:3b-instruct"
 
 
 SYSTEM_PROMPT = """ 
@@ -62,7 +62,6 @@ def _build_context(chunks: list[RetrievedChunk]) -> str:
 
 
 def _build_user_prompt(query: str, context: str) -> str:
-    """Собрать пользовательский промпт: запрос + контекст."""
     return (
         f"ЗАПРОС ПОЛЬЗОВАТЕЛЯ:\n{query}\n\n"
         f"ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ:\n{context}\n\n"
@@ -71,10 +70,11 @@ def _build_user_prompt(query: str, context: str) -> str:
 
 
 def generate(query: str, chunks: list[RetrievedChunk], max_retries: int = 2) -> Instruction:
-    """Сгенерировать инструкцию по запросу и найденным чанкам.
-
-    Делает до max_retries попыток получить валидный JSON от LLM.
-    """
+    if not chunks:
+        raise ValueError(
+            f"Не удалось найти информацию в базе данных для вашего запроса."
+            "Попробуйте переформулировать."
+        )
     context = _build_context(chunks)
     user_prompt = _build_user_prompt(query, context)
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     from retrieval import retrieve
 
     query = (
-        "Привет, дай инструкцию по путевкам в детские лагеря"
+        "Какие внеурочные виды деятельности есть для детей?"
     )
     chunks = retrieve(query, top_k=5)
 

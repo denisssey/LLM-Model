@@ -21,7 +21,7 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
     return _embeddings, _chunks
 
 
-def retrieve(query: str, top_k: int = 5) -> list[RetrievedChunk]:
+def retrieve(query: str, top_k: int = 5, minimal_score: float = 0.78) -> list[RetrievedChunk]:
     embeddings, chunks = _load_index()
     query_vector = embed_query(query)
     scores = embeddings @ query_vector
@@ -29,10 +29,10 @@ def retrieve(query: str, top_k: int = 5) -> list[RetrievedChunk]:
 
     results: list[RetrievedChunk] = []
     for i in top_index:
-        results.append(RetrievedChunk(
-            chunk=chunks[i],
-            score=float(scores[i]),
-        ))
+        score = float(scores[i])
+        if score < minimal_score:
+            break
+        results.append(RetrievedChunk(chunk=chunks[i], score=score))
     return results
 
 
