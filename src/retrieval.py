@@ -1,5 +1,3 @@
-"""Модуль retrieval: поиск релевантных чанков по запросу"""
-
 import json
 
 import numpy as np

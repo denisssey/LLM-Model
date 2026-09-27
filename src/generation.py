@@ -123,7 +123,7 @@ if __name__ == "__main__":
     from retrieval import retrieve
 
     query = (
-        "Мне необходимо составить инструкцию о приеме ребенка в первый класс"
+        "Привет, дай инструкцию по путевкам в детские лагеря"
     )
     chunks = retrieve(query, top_k=5)
 
