@@ -1,0 +1,22 @@
+# pyproject.toml
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["src"]
+src_paths = ["src"]
+
+[tool.black]
+line-length = 88  #
+target-version = ['py312']
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+per-file-ignores = ["tests/*:F401"]

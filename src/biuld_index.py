@@ -3,8 +3,9 @@ import json
 import numpy as np
 
 from embeddings import embed_passages
-from paths import CHUNKS_JSON, EMBEDDINGS_NPY, CHUNK_IDS_JSON
+from paths import CHUNK_IDS_JSON, CHUNKS_JSON, EMBEDDINGS_NPY
 from schemas import Chunk
+
 
 def build_index() -> None:
     raw = json.loads(CHUNKS_JSON.read_text(encoding="utf-8"))
@@ -21,8 +22,7 @@ def build_index() -> None:
     EMBEDDINGS_NPY.parent.mkdir(parents=True, exist_ok=True)
     np.save(EMBEDDINGS_NPY, embeddings)
     CHUNK_IDS_JSON.write_text(
-        json.dumps(chunk_ids, ensure_ascii=False, indent=2),
-        encoding="utf-8"
+        json.dumps(chunk_ids, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print("Сохранил:", EMBEDDINGS_NPY)
     print("Сохранил:", CHUNK_IDS_JSON)
@@ -30,6 +30,7 @@ def build_index() -> None:
     loaded_embeddings = np.load(EMBEDDINGS_NPY)
     loaded_ids = json.loads(CHUNK_IDS_JSON.read_text(encoding="utf-8"))
     print("Проверка:", loaded_embeddings.shape, "|", len(loaded_ids), "id")
+
 
 if __name__ == "__main__":
     build_index()

@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from schemas import Instruction, RetrievedChunk
 
-
 MODEL_NAME = "qwen2.5:3b-instruct"
 
 
@@ -49,6 +48,7 @@ SYSTEM_PROMPT = """
 - sources: список source_id использованных фрагментов
 """
 
+
 def _build_context(chunks: list[RetrievedChunk]) -> str:
     parts: list[str] = []
     for i, rc in enumerate(chunks, start=1):
@@ -69,12 +69,11 @@ def _build_user_prompt(query: str, context: str) -> str:
     )
 
 
-def generate(query: str, chunks: list[RetrievedChunk], max_retries: int = 2) -> Instruction:
+def generate(
+    query: str, chunks: list[RetrievedChunk], max_retries: int = 2
+) -> Instruction:
     if not chunks:
-        raise ValueError(
-            f"Не удалось найти информацию в базе данных для вашего запроса."
-            "Попробуйте переформулировать."
-        )
+        raise ValueError("Не удалось найти информацию в базе данных для вашего запроса. Попробуйте переформулировать.")
     context = _build_context(chunks)
     user_prompt = _build_user_prompt(query, context)
 
@@ -102,13 +101,11 @@ def generate(query: str, chunks: list[RetrievedChunk], max_retries: int = 2) -> 
         except (json.JSONDecodeError, ValidationError) as e:
             last_error = e
             print(f"[generation] Невалидный ответ: {e}")
-            # Уточняем промпт для повторной попытки
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": user_prompt
-                    + "\n\nВАЖНО: верни ТОЛЬКО валидный JSON. "
+                    "content": user_prompt + "\n\nВАЖНО: верни ТОЛЬКО валидный JSON. "
                     "Все обязательные поля должны быть заполнены. "
                     "Никаких пояснений до или после JSON.",
                 },
@@ -122,9 +119,7 @@ def generate(query: str, chunks: list[RetrievedChunk], max_retries: int = 2) -> 
 if __name__ == "__main__":
     from retrieval import retrieve
 
-    query = (
-        "Какие внеурочные виды деятельности есть для детей?"
-    )
+    query = "Что такое оффсайд в футболе"
     chunks = retrieve(query, top_k=5)
 
     print(f"\nЗАПРОС: {query}")

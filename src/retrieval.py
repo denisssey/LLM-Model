@@ -3,9 +3,8 @@ import json
 import numpy as np
 
 from embeddings import embed_query
-from paths import CHUNKS_JSON, CHUNK_IDS_JSON, EMBEDDINGS_NPY
+from paths import CHUNKS_JSON, EMBEDDINGS_NPY
 from schemas import Chunk, RetrievedChunk
-
 
 _embeddings: np.ndarray | None = None
 _chunks: list[Chunk] | None = None
@@ -21,9 +20,15 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
     return _embeddings, _chunks
 
 
-def retrieve(query: str, top_k: int = 5, minimal_score: float = 0.78) -> list[RetrievedChunk]:
+# Порог подобран путем тестов. Релевантные чанки дают 0.82+, чуть понижаем, чтобы не слишком сильно отсекать
+def retrieve(
+    query: str, top_k: int = 5, minimal_score: float = 0.78
+) -> list[RetrievedChunk]:
     embeddings, chunks = _load_index()
     query_vector = embed_query(query)
+
+    # Векторы нормализованы (в embeddings.py) -> скалярное произведение равно косинусной близости
+    # Получаем по одному числу на каждый чанк
     scores = embeddings @ query_vector
     top_index = np.argsort(scores)[::-1][:top_k]
 

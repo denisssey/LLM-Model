@@ -2,12 +2,14 @@ import json
 
 from bs4 import BeautifulSoup
 
-from paths import RAW_DIRECTORY, CHUNKS_JSON
+from paths import CHUNKS_JSON, RAW_DIRECTORY
 
+from pathlib import Path
 
-def load_local_html(filepath: str) -> str:
+def load_local_html(filepath: Path) -> str:
     with open(filepath, "r", encoding="utf-8-sig") as file:
         return file.read()
+
 
 def extract_article_text(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "lxml")
@@ -20,11 +22,13 @@ def extract_article_text(html: str) -> list[dict]:
         if not h2 or not panel:
             continue
 
-        chunks.append({
-            "question": h2.get_text(strip=True),
-            "answer": panel.get_text(separator=" ", strip=True),
-            "source_id": h2.get("id"),
-        })
+        chunks.append(
+            {
+                "question": h2.get_text(strip=True),
+                "answer": panel.get_text(separator=" ", strip=True),
+                "source_id": h2.get("id"),
+            }
+        )
 
     return chunks
 
@@ -46,4 +50,3 @@ if __name__ == "__main__":
         encoding="utf-8",
     )
     print("Сохранил:", CHUNKS_JSON)
-

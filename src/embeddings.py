@@ -1,9 +1,9 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-
 MODEL_NAME = "intfloat/multilingual-e5-base"
 
+# Глобальный кэш, чтобы не перезагружать модель при каждом вызове
 _model: SentenceTransformer | None = None
 
 
@@ -16,24 +16,11 @@ def get_model() -> SentenceTransformer:
 
 def embed_passages(texts: list[str]) -> np.ndarray:
     prefixed = [f"passage: {t}" for t in texts]
-    return get_model().encode(prefixed, normalize_embeddings=True)
+    result = get_model().encode(prefixed, normalize_embeddings=True)
+    return np.asarray(result)
 
 
 def embed_query(text: str) -> np.ndarray:
     prefixed = f"query: {text}"
     result = get_model().encode([prefixed], normalize_embeddings=True)
-    return result[0]
-
-
-if __name__ == "__main__":
-    test_texts = [
-        "Нужно ли платить за продлёнку в школах?",
-        "Как получить путёвку в детский лагерь?",
-        "Погода в Москве завтра",
-    ]
-    vecs = embed_passages(test_texts)
-    print("Форма матрицы:", vecs.shape)                # ожидаем (3, 768)
-    print("Норма 1-го вектора:", float(np.linalg.norm(vecs[0])))   # ожидаем ~1.0
-
-    q = embed_query("Как оплатить продлёнку?")
-    print("Форма запроса:", q.shape)
+    return np.asarray(result[0])
