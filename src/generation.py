@@ -1,29 +1,30 @@
-import json
+import logging
 
 import ollama
 from pydantic import ValidationError
 
 from schemas import Instruction, RetrievedChunk
 
+logger = logging.getLogger(__name__)
+
 MODEL_NAME = "qwen2.5:3b-instruct"
 
 
-SYSTEM_PROMPT = """ 
-РОЛЬ:
-Ты - помощник для составления официальных инструкций 
-    для жителей города Санкт-Петербург.
+SYSTEM_PROMPT = """РОЛЬ:
+Ты - помощник для составления официальных инструкций
+    для жителей города Санкт-Петербурга.
 
-ЗАДАЧА: 
+ЗАДАЧА:
 По запросу пользователя составить структурированную инструкцию,
 опираясь только на предоставленные фрагменты базы знаний.
 
-ПРАВИЛА: 
+ПРАВИЛА:
 1. Используй ТОЛЬКО информацию из предоставленных фрагментов.
 2. Отвечай ТОЛЬКО на русском языке.
 3. Отвечай ТОЛЬКО валидным JSON без пояснений до и после.
 4. Если в предоставленных фрагментах нет информации для ответа, честно напиши в поле summary, что в базе знаний нет подходящей информации.
 5. В поле sources перечисли source_id только тех фрагментов, которые ты реально использовал.
-6. 6. В поле required_documents включай ТОЛЬКО те документы, которые явно упомянуты в предоставленных фрагментах. Не добавляй по догадке.
+6. В поле required_documents включай ТОЛЬКО те документы, которые явно упомянуты в предоставленных фрагментах. Не добавляй по догадке.
 7. В поле steps описывай ТОЛЬКО конкретные действия, которые должен сделать пользователь. Не включай в steps справочную информацию о правилах и условиях.
 
 ФОРМАТ ОТВЕТА (JSON):
@@ -32,19 +33,19 @@ SYSTEM_PROMPT = """
     "audience": "кому адресована (категория граждан)",
     "summary": "краткое описание услуги",
     "required_documents": ["документ 1", "документ 2"],
-    "steps": ["шаг 1", "шаг 2"], 
+    "steps": ["шаг 1", "шаг 2"],
     "deadline": "сроки оказания или null",
     "where_to_apply": "куда обращаться",
     "sources": ["source_id_1", "source_id_2"]
 }
 ОПИСАНИЕ ПОЛЕЙ:
-- title: заголовок инструкции 
+- title: заголовок инструкции
 - audience: кому адресована (категория граждан)
-- summary: краткое описание услуги 
-- required_documents: список необходимых документов 
+- summary: краткое описание услуги
+- required_documents: список необходимых документов
 - steps: пошаговый порядок действий
 - deadline: сроки оказания или null
-- where_to_apply: Куда обращаться 
+- where_to_apply: Куда обращаться
 - sources: список source_id использованных фрагментов
 """
 
@@ -73,7 +74,10 @@ def generate(
     query: str, chunks: list[RetrievedChunk], max_retries: int = 2
 ) -> Instruction:
     if not chunks:
-        raise ValueError("Не удалось найти информацию в базе данных для вашего запроса. Попробуйте переформулировать.")
+        raise ValueError(
+            "Не удалось найти информацию в базе данных для вашего запроса. "
+            "Попробуйте переформулировать."
+        )
     context = _build_context(chunks)
     user_prompt = _build_user_prompt(query, context)
 
@@ -85,7 +89,7 @@ def generate(
     last_error: Exception | None = None
 
     for attempt in range(1, max_retries + 1):
-        print(f"[generation] Попытка {attempt}/{max_retries}...")
+        logger.info("Попытка %d/%d", attempt, max_retries)
 
         response = ollama.chat(
             model=MODEL_NAME,
@@ -96,11 +100,10 @@ def generate(
         content = response["message"]["content"]
 
         try:
-            data = json.loads(content)
-            return Instruction(**data)
-        except (json.JSONDecodeError, ValidationError) as e:
+            return Instruction.model_validate_json(content)
+        except ValidationError as e:
             last_error = e
-            print(f"[generation] Невалидный ответ: {e}")
+            logger.warning("Невалидный ответ: %s", e)
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
@@ -114,34 +117,3 @@ def generate(
     raise RuntimeError(
         f"Не удалось получить валидный JSON после {max_retries} попыток: {last_error}"
     )
-
-
-if __name__ == "__main__":
-    from retrieval import retrieve
-
-    query = "Что такое оффсайд в футболе"
-    chunks = retrieve(query, top_k=5)
-
-    print(f"\nЗАПРОС: {query}")
-    print(f"\nНайдено чанков: {len(chunks)}")
-    for rc in chunks:
-        print(f"  [{rc.score:.3f}] {rc.chunk.question}")
-    print()
-
-    instruction = generate(query, chunks)
-
-    print("=" * 60)
-    print("ИНСТРУКЦИЯ")
-    print("=" * 60)
-    print("Заголовок:       ", instruction.title)
-    print("Кому адресована: ", instruction.audience)
-    print("Описание:        ", instruction.summary)
-    print("Документы:")
-    for d in instruction.required_documents:
-        print(f"  - {d}")
-    print("Шаги:")
-    for i, s in enumerate(instruction.steps, start=1):
-        print(f"  {i}. {s}")
-    print("Сроки:           ", instruction.deadline)
-    print("Куда обращаться: ", instruction.where_to_apply)
-    print("Источники:       ", instruction.sources)

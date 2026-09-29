@@ -17,17 +17,21 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
         _embeddings = np.load(EMBEDDINGS_NPY)
         raw = json.loads(CHUNKS_JSON.read_text(encoding="utf-8"))
         _chunks = [Chunk(**item) for item in raw]
+
+    assert _embeddings is not None, "Эмбеддинги не загружены"
+    assert _chunks is not None, "Чанки не загружены"
     return _embeddings, _chunks
 
 
-# Порог подобран путем тестов. Релевантные чанки дают 0.82+, чуть понижаем, чтобы не слишком сильно отсекать
+# Порог подобран путем тестов.
+# Релевантные чанки дают 0.82+, чуть понижаем, чтобы не слишком сильно отсекать
 def retrieve(
     query: str, top_k: int = 5, minimal_score: float = 0.78
 ) -> list[RetrievedChunk]:
     embeddings, chunks = _load_index()
     query_vector = embed_query(query)
 
-    # Векторы нормализованы (в embeddings.py) -> скалярное произведение равно косинусной близости
+    # Векторы нормализованы -> скалярное произведение равно косинусной близости
     # Получаем по одному числу на каждый чанк
     scores = embeddings @ query_vector
     top_index = np.argsort(scores)[::-1][:top_k]

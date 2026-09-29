@@ -1,6 +1,6 @@
 from pathlib import Path
 
-#paths.py лежит в src/, значит корень проекта на уровня выше (.parent.parent)
+# paths.py лежит в src/, значит корень проекта на уровня выше (.parent.parent)
 BASE_DIRECTORY = Path(__file__).resolve().parent.parent
 
 DATA_DIRECTORY = BASE_DIRECTORY / "data"
