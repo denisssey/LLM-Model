@@ -1,10 +1,14 @@
 import json
+import logging
 from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+from logging_config import setup_logging
 from paths import CHUNKS_JSON, RAW_DIRECTORY
 from schemas import Chunk
+
+logger = logging.getLogger("scraper")
 
 
 def load_local_html(filepath: Path) -> str:
@@ -39,15 +43,19 @@ def extract_article_text(html: str, source_file: str) -> list[Chunk]:
 
 
 if __name__ == "__main__":
+    setup_logging()
+
     html_files = sorted(RAW_DIRECTORY.glob("*.html"))
-    print("Найдено файлов:", len(html_files))
+    logger.info("Найдено файлов: %d", len(html_files))
 
     all_chunks: list[Chunk] = []
     for filepath in html_files:
         html = load_local_html(filepath)
-        all_chunks.extend(extract_article_text(html, filepath.name))
+        chunks_from_file = extract_article_text(html, filepath.name)
+        logger.info("%s: %d чанков", filepath.name, len(chunks_from_file))
+        all_chunks.extend(chunks_from_file)
 
-    print("Всего чанков:", len(all_chunks))
+    logger.info("Всего чанков: %d", len(all_chunks))
 
     CHUNKS_JSON.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_JSON.write_text(
@@ -58,4 +66,4 @@ if __name__ == "__main__":
         ),
         encoding="utf-8",
     )
-    print("Сохранил:", CHUNKS_JSON)
+    logger.info("Сохранил: %s", CHUNKS_JSON)

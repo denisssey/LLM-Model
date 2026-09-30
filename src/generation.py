@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from schemas import Instruction, RetrievedChunk
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("generation")
 
 MODEL_NAME = "qwen2.5:3b-instruct"
 

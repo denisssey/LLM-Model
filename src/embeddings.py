@@ -1,5 +1,9 @@
+import logging
+
 import numpy as np
 from sentence_transformers import SentenceTransformer
+
+logger = logging.getLogger("embeddings")
 
 MODEL_NAME = "intfloat/multilingual-e5-base"
 
@@ -11,6 +15,7 @@ def get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         _model = SentenceTransformer(MODEL_NAME)
+        logger.info("Модель эмбеддингов загружена: %s", MODEL_NAME)
     return _model
 
 

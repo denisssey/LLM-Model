@@ -1,10 +1,13 @@
 import json
+import logging
 
 import numpy as np
 
 from embeddings import embed_query
 from paths import CHUNKS_JSON, EMBEDDINGS_NPY
 from schemas import Chunk, RetrievedChunk
+
+logger = logging.getLogger("retrieval")
 
 _embeddings: np.ndarray | None = None
 _chunks: list[Chunk] | None = None
@@ -17,6 +20,7 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
         _embeddings = np.load(EMBEDDINGS_NPY)
         raw = json.loads(CHUNKS_JSON.read_text(encoding="utf-8"))
         _chunks = [Chunk(**item) for item in raw]
+        logger.info("Загружено чанков: %d", len(_chunks))
 
     assert _embeddings is not None, "Эмбеддинги не загружены"
     assert _chunks is not None, "Чанки не загружены"
@@ -42,16 +46,10 @@ def retrieve(
         if score < minimal_score:
             break
         results.append(RetrievedChunk(chunk=chunks[i], score=score))
+
+    if not results:
+        logger.warning(
+            "Ни один чанк не прошел порог %.2f для запроса: %s", minimal_score, query
+        )
+
     return results
-
-
-if __name__ == "__main__":
-    test_queries = [
-        "Как оплатить продлёнку в школе?",
-        "Как получить путёвку в детский лагерь?",
-        "Когда подавать заявление в первый класс?",
-    ]
-    for q in test_queries:
-        print(f"\n=== {q} ===")
-        for rc in retrieve(q, top_k=5):
-            print(f"  [{rc.score:.3f}] {rc.chunk.question}")
