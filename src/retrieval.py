@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 from embeddings import embed_query
-from paths import CHUNKS_JSON, EMBEDDINGS_NPY
+from paths import CHUNK_IDS_JSON, CHUNKS_JSON, EMBEDDINGS_NPY
 from schemas import Chunk, RetrievedChunk
 
 logger = logging.getLogger("retrieval")
@@ -20,6 +20,23 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
         _embeddings = np.load(EMBEDDINGS_NPY)
         raw = json.loads(CHUNKS_JSON.read_text(encoding="utf-8"))
         _chunks = [Chunk(**item) for item in raw]
+        chunk_ids = json.loads(CHUNK_IDS_JSON.read_text(encoding="utf-8"))
+
+        if len(chunk_ids) != len(_chunks):
+            raise ValueError(
+                f"Индекс устарел {len(chunk_ids)} id в chunk_ids.json, "
+                f"но {len(_chunks)} чанков в chunks.json"
+                f"Пересобрать индекс -> python src/build_index.py"
+            )
+
+        for i, (expected, chunk) in enumerate(zip(chunk_ids, _chunks)):
+            if expected != chunk.source_id:
+                raise ValueError(
+                    f"Индекс устарел на позиции {i}: ожидался {expected},"
+                    f"получен {chunk.source_id}. "
+                    f"Пересобрать индекс -> python src/build_index.py"
+                )
+
         logger.info("Загружено чанков: %d", len(_chunks))
 
     assert _embeddings is not None, "Эмбеддинги не загружены"
@@ -32,7 +49,8 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
 def retrieve(
     query: str, top_k: int = 5, minimal_score: float = 0.78
 ) -> list[RetrievedChunk]:
-
+    if not query.strip():
+        raise ValueError("query не может быть пустым")
     if top_k <= 0:
         raise ValueError(f"top_k должен быть > 0, получили {top_k}")
 
