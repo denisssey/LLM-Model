@@ -24,7 +24,7 @@ SYSTEM_PROMPT = """РОЛЬ:
 3. Отвечай ТОЛЬКО валидным JSON без пояснений до и после.
 4. Если в предоставленных фрагментах нет информации для ответа, честно напиши в поле summary, что в базе знаний нет подходящей информации.
 5. В поле sources перечисли source_id только тех фрагментов, которые ты реально использовал.
-6. 6. В поле required_documents включай ТОЛЬКО те документы, которые ДОСЛОВНО упомянуты в предоставленных фрагментах. Если в тексте нет явного упоминания документа — НЕ добавляй его, даже если он кажется логичным. Лучше показать меньше документов, чем выдумать.
+6. В поле required_documents включай ТОЛЬКО те документы, которые ДОСЛОВНО упомянуты в предоставленных фрагментах. Если в тексте нет явного упоминания документа — НЕ добавляй его, даже если он кажется логичным. Лучше показать меньше документов, чем выдумать.
 7. В поле steps описывай ТОЛЬКО конкретные действия, которые должен сделать пользователь. Не включай в steps справочную информацию о правилах и условиях.
 8. Не повторяй одинаковые шаги. Каждый шаг должен быть уникальным.
 9. Если для поля deadline или where_to_apply нет информации в фрагментах - укажи null. НЕ выдумывай.
@@ -89,6 +89,7 @@ def generate(
             "Не удалось найти информацию в базе данных для вашего запроса. "
             "Попробуйте переформулировать."
         )
+
     context = _build_context(chunks)
     user_prompt = _build_user_prompt(query, context)
 
@@ -100,7 +101,6 @@ def generate(
     last_error: Exception | None = None
 
     for attempt in range(1, max_retries + 1):
-
         response = ollama.chat(
             model=MODEL_NAME,
             messages=messages,
@@ -111,21 +111,36 @@ def generate(
 
         try:
             instruction = Instruction.model_validate_json(content)
-            logger.info("Валидация прошла успешно")
-            return instruction
         except ValidationError as e:
             last_error = e
-            logger.warning("Невалидный ответ: %s", e)
-            messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": user_prompt + "\n\nВАЖНО: верни ТОЛЬКО валидный JSON. "
-                    "Все обязательные поля должны быть заполнены. "
-                    "Никаких пояснений до или после JSON.",
-                },
-            ]
+            logger.warning("Невалидный ответ (попытка %d): %s", attempt, e)
+            if attempt < max_retries:
+                error_text = str(e)[:500]
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": content},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Твой JSON не прошел валидацию по схеме:\n{error_text}\n\n"
+                            f"Верни ИСПРАВЛЕННЫЙ JSON. Только JSON, без пояснений."
+                        ),
+                    },
+                ]
+            continue
 
+        valid_ids = {rc.chunk.source_id for rc in chunks}
+        original_count = len(instruction.sources)
+        instruction.sources = [sid for sid in instruction.sources if sid in valid_ids]
+        removed = original_count - len(instruction.sources)
+        if removed > 0:
+            logger.warning(
+                "Модель вернула %d выдуманных source_id, отфильтровано", removed
+            )
+
+        logger.info("Валидация прошла успешно")
+        return instruction
     raise RuntimeError(
         f"Не удалось получить валидный JSON после {max_retries} попыток: {last_error}"
     )
