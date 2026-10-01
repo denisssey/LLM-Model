@@ -22,5 +22,5 @@ class Instruction(BaseModel):
     required_documents: list[str]
     steps: list[str]
     deadline: str | None = None
-    where_to_apply: str
+    where_to_apply: str | None = None
     sources: list[str]

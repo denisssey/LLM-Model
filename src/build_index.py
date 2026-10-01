@@ -14,12 +14,10 @@ logger = logging.getLogger("build_index")
 def build_index() -> None:
     raw = json.loads(CHUNKS_JSON.read_text(encoding="utf-8"))
     chunks = [Chunk(**item) for item in raw]
-    logger.info("Загружено чанков: %d", len(chunks))
 
     texts = [f"{c.question} {c.answer}" for c in chunks]
 
     embeddings = embed_passages(texts)
-    logger.info("Эмбеддинги: %s", embeddings.shape)
 
     # Защита от рассинхрона, если эмбеддингов != чанков,
     # то retrieval будет работать с неправильными парами
@@ -36,8 +34,9 @@ def build_index() -> None:
     CHUNK_IDS_JSON.write_text(
         json.dumps(chunk_ids, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    logger.info("Сохранил: %s", EMBEDDINGS_NPY)
-    logger.info("Сохранил: %s", CHUNK_IDS_JSON)
+    logger.info(
+        "Сохранил: embeddings={%s}, chunks={%s}", EMBEDDINGS_NPY, CHUNK_IDS_JSON
+    )
 
     loaded_embeddings = np.load(EMBEDDINGS_NPY)
     loaded_ids = json.loads(CHUNK_IDS_JSON.read_text(encoding="utf-8"))

@@ -32,6 +32,10 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
 def retrieve(
     query: str, top_k: int = 5, minimal_score: float = 0.78
 ) -> list[RetrievedChunk]:
+
+    if top_k <= 0:
+        raise ValueError(f"top_k должен быть > 0, получили {top_k}")
+
     embeddings, chunks = _load_index()
     query_vector = embed_query(query)
 
