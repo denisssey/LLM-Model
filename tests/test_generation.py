@@ -23,16 +23,19 @@ def make_chunks(n: int = 3) -> list[RetrievedChunk]:
 def make_valid_json(sources: list[str] | None = None) -> str:
     if sources is None:
         sources = ["id-0", "id-1"]
-    return json.dumps({
-        "title": "Тестовая инструкция",
-        "audience": "родители",
-        "summary": "краткое описание",
-        "required_documents": ["паспорт"],
-        "steps": ["шаг 1", "шаг 2"],
-        "deadline": "1 апреля",
-        "where_to_apply": "МФЦ",
-        "sources": sources,
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "title": "Тестовая инструкция",
+            "audience": "родители",
+            "summary": "краткое описание",
+            "required_documents": ["паспорт"],
+            "steps": ["шаг 1", "шаг 2"],
+            "deadline": "1 апреля",
+            "where_to_apply": "МФЦ",
+            "sources": sources,
+        },
+        ensure_ascii=False,
+    )
 
 
 class TestGenerateValidation:
@@ -62,9 +65,13 @@ class TestGenerateSuccess:
 
     def test_filters_hallucinated_sources(self, monkeypatch):
         def fake_chat(**kwargs):
-            return {"message": {"content": make_valid_json(
-                sources=["id-0", "выдуманный-id", "id-1", "ещё-один-фейк"]
-            )}}
+            return {
+                "message": {
+                    "content": make_valid_json(
+                        sources=["id-0", "выдуманный-id", "id-1", "ещё-один-фейк"]
+                    )
+                }
+            }
 
         monkeypatch.setattr(generation.ollama, "chat", fake_chat)
 
@@ -73,9 +80,9 @@ class TestGenerateSuccess:
 
     def test_all_hallucinated_sources(self, monkeypatch):
         def fake_chat(**kwargs):
-            return {"message": {"content": make_valid_json(
-                sources=["фейк-1", "фейк-2"]
-            )}}
+            return {
+                "message": {"content": make_valid_json(sources=["фейк-1", "фейк-2"])}
+            }
 
         monkeypatch.setattr(generation.ollama, "chat", fake_chat)
 

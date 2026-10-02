@@ -1,6 +1,5 @@
 from scraper import extract_article_text
 
-
 VALID_HTML = """
 <html>
 <body>

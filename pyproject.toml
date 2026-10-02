@@ -15,8 +15,17 @@ disallow_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 no_implicit_optional = true
+mypy_path = "src"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
 
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203", "W503"]
 per-file-ignores = ["tests/*:F401"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
