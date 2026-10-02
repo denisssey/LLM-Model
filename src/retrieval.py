@@ -22,10 +22,23 @@ def _load_index() -> tuple[np.ndarray, list[Chunk]]:
         _chunks = [Chunk(**item) for item in raw]
         chunk_ids = json.loads(CHUNK_IDS_JSON.read_text(encoding="utf-8"))
 
+        if _embeddings.ndim != 2:
+            raise ValueError(
+                f"Ожидалась двумерная матрица эмбеддингов, "
+                f"получено {_embeddings.ndim} измерений"
+            )
+
+        if _embeddings.shape[0] != len(_chunks):
+            raise ValueError(
+                f"Число эмбеддингов ({_embeddings.shape[0]}) не совпадает "
+                f"с числом чанков ({len(_chunks)}). "
+                f"Пересобрать индекс -> python src/build_index.py"
+            )
+
         if len(chunk_ids) != len(_chunks):
             raise ValueError(
                 f"Индекс устарел {len(chunk_ids)} id в chunk_ids.json, "
-                f"но {len(_chunks)} чанков в chunks.json"
+                f"но {len(_chunks)} чанков в chunks.json. "
                 f"Пересобрать индекс -> python src/build_index.py"
             )
 
